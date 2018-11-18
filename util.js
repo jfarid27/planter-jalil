@@ -11,22 +11,24 @@ const handleError = _.curry((loc, err) => writeAppend(
 
 const genSwitch = id => (new GPIO(id, 'out'));
 
-const genRead = id => ({ dev: (new GPIO(id, 'in')), id });
+const genRead = _.curry((loc, id) => 
+   ({ dev: (new GPIO(id, 'in')), id, loc }));
 
-const writeData = _.curry((id, err, data) => (new Promise((res, rej) => 
-  writeAppend(`${config.data}/data-${id}.txt`, data, err => err ? rej(err) : res())
+const writeData = _.curry((loc, id, err, data) => (new Promise((res, rej) => 
+  writeAppend(`${loc}/data-${id}.txt`, data, err => err ? rej(err) : res())
 )));
 
 const testSignal = gpio => new Promise((res, rej) =>
   gpio.dev.read((err, data) =>
-    (err) ? rej(err) : writeData(gpio.id, err, data)
+    (err) ? rej(err) : writeData(gpio.loc, gpio.id, err, data)
       .then(res)
       .catch(rej)));
 
-const turnOnSwitch = sw => (
-  new Promise((res, rej) => sw.write(1, err =>
+const setSwitch = _.curry((setting, sw) => (
+  new Promise((res, rej) => sw.write(setting, err =>
     (err ? rej(err) : res)
-  )));
+  ))));
+
 
 const checkGpio = () => (new Promise((res, rej) => 
   (GPIO.accessible ? res() : rej("GPIO Not Accessible"))));
@@ -35,7 +37,7 @@ module.exports = {
   checkGpio,
   genSwitch,
   genRead,
-  turnOnSwitch,
+  setSwitch,
   testSignal,
   handleError
 };

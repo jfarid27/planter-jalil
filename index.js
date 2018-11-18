@@ -4,11 +4,17 @@ const config = require('./config.json');
 const util = require('./util');
 
 const switches = _.forEach(config.switches, util.genSwitch);
-const reads = _.forEach(config.reads, util.genRead);
+const reads = _.forEach(config.reads, util.genRead(config.data));
 
-const runMain = () => util.checkGpio()
-    .then(() => Promise.all(switches, util.turnOnSwitch))
-    .then(() => Promise.all(reads, util.testSignal))
-    .catch(util.handleError(config.error));
+async function runMain() {
+  try {
+    await util.checkGpio()
+    await Promise.all(switches, util.setSwitch(1))
+    await Promise.all(reads, util.testSignal)
+    await Promise.all(switches, util.setSwitch(0))
+  } catch (err) {
+    util.handleError(config.error)(err)
+  }
+}
 
 setInterval(runMain, config.interval);
